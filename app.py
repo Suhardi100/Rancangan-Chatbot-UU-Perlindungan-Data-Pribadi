@@ -39,24 +39,24 @@ tools = {
     "Wikipedia": Tool(
         name="Wikipedia",
         func=wikipedia_tool.run,
-        description="Gunakan untuk konsep UU Cipta kerja atau istilah yang berkaitan dengan UU Cipta Kerja dalam Bahasa Indonesia"
+        description="Gunakan untuk menemukan konsep utama, sejarah, dan hal-hal lain yang berkaitan dengan UU Perlindungan Data Pribadi (PDP) dalam Bahasa Indonesia!"
     ),
     "arXiv": Tool(
         name="arXiv",
         func=arxiv_tool.run,
-        description="Gunakan untuk referensi akademik tentang teori dan penelitian berkaitan UU Cipta Kerja"
+        description="Gunakan untuk referensi akademik tentang teori atau penelitian berkaitan UU Perlindungan Data Pribadi!"
     ),
     "TavilySearch": Tool(
         name="TavilySearch",
         func=tavily_tool_instance.run,
-        description="Gunakan untuk berita UU Cipta Kerja terbaru, peraturan Indonesia, dan putusan pengadilan"
+        description="Gunakan untuk berita UU Perlindungan Data Pribadi terbaru, peraturan Indonesia, atau putusan pengadilan!"
     )
 }
 
 # ================================
 # 📚 Load Dokumen UU Cipta Kerja
 # ================================
-loader = TextLoader("uu_ciptakerja.txt", encoding='utf-8')
+loader = TextLoader("uu_pdp.txt", encoding='utf-8')
 documents = loader.load()
 
 # ================================
@@ -79,7 +79,7 @@ class AgentState(TypedDict):
 def tool_selection_node(state: AgentState) -> AgentState:
     q = state["question"]
     prompt = f"""
-    Kamu adalah asisten ahli UU Cipta Kerja yang sangat cerdas setara 100 profesor. Tentukan tools terbaik untuk menjawab pertanyaan berikut:
+    Kamu adalah asisten ahli UU Pelindungan Data Pribadi yang sangat cerdas setara 100 profesor. Tentukan tools terbaik untuk menjawab pertanyaan berikut:
 
     Pertanyaan: {q}
 
@@ -87,13 +87,13 @@ def tool_selection_node(state: AgentState) -> AgentState:
     1. Wikipedia - konsep hukum umum (Bahasa Indonesia)
     2. arXiv - penelitian hukum akademik
     3. TavilySearch - berita dan hukum terbaru di Indonesia
-    4. PDF_Documents - dokumen UU Cipta Kerja
+    4. Documents UU PDP - dokumen UU Perlindungan Data Pribadi
 
     Analisis:
-    - Apakah ada referensi tentang UU Cipta Kerja terkini Indonesia? → TavilySearch
-    - Apakah teori akademik yang berkenaan UU Cipta Kerja di Indonesia? → arXiv
-    - Apakah konsep dasar UU Cipta Kerja? → Wikipedia
-    - Apakah isi UU Cipta Kerja setiap pasalnya? → PDF_Documents
+    - Apakah ada referensi tentang UU Perlindungan Data Pribadi (PDP) terkini Indonesia? → TavilySearch
+    - Apakah teori akademik yang berkenaan UU Perlindungan Data Pribadi (PDP) di Indonesia? → arXiv
+    - Apakah konsep dasar UU Perlindungan Data Pribadi (PDP)? → Wikipedia
+    - Apakah isi UU Perlindungan Data Pribadi (PDP) setiap pasalnya? → Documents UU PDP
 
     Format:
     TOOLS: tool1,tool2
