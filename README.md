@@ -1,2 +1,3 @@
 # Rancangan-Chatbot-UU-Perkawinan
-Chatbot ini dibuat oleh Suhardi dalam rangka memenuhi tugas akhir kursus serta membantu pihak-pihak yang berkebutuhan untuk memahami UU Perkawinan secara mendalam.
+Repositori ini dibuat oleh Suhardi, berisi tentang chatbot untuk tanya jawab mengenai Undang-Undang Perlindungan Data Pribadi (PDP) sebagai pemenuhan tugas akhir kursus. Selain itu, juga dapat digunakan oleh pihak-pihak yang ingin memahami lebih lanjut mengenai UU PDP. 
+
