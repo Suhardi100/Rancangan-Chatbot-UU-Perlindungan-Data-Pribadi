@@ -24,7 +24,7 @@ os.environ["LANGCHAIN_PROJECT"] = "UU-CiptaKerja-AgenticRAG"
 # ================================
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.0-flash",
-    temperature=0.1,
+    temperature=0.5,
     google_api_key="AIzaSyBI6YdES2PyWC3JU2_eDtTW1ipi6Z07DcE"
 )
 
@@ -79,7 +79,7 @@ class AgentState(TypedDict):
 def tool_selection_node(state: AgentState) -> AgentState:
     q = state["question"]
     prompt = f"""
-    Kamu adalah asisten ahli UU Pelindungan Data Pribadi yang sangat cerdas setara 100 profesor. Tentukan tools terbaik untuk menjawab pertanyaan berikut:
+    Kamu adalah asisten ahli UU Pelindungan Data Pribadi yang sangat cerdas setara 100 profesor. Utamakan mencari dulu sumber yang terdapat dalam documents. Baru setelah itu, tentukan tools terbaik untuk menjawab pertanyaan berikut:
 
     Pertanyaan: {q}
 
@@ -136,12 +136,12 @@ def enhanced_grade_node(state: AgentState) -> AgentState:
     q = state["question"]
     all_docs = state.get("docs", []) + state.get("external_docs", [])
     prompt = f"""
-    Evaluasi relevansi dokumen berikut untuk pertanyaan UU Perlindungan Data Pribadi (PDP) ini:
+    Evaluasi relevansi dokumen berikut untuk pertanyaan UU Perlindungan Data Pribadi (PDP) ini dengan documents:
 
     Pertanyaan: {q}
     Dokumen: {all_docs}
 
-    Apakah sangat relevan untuk menjawab pertanyaan? (ya/tidak)
+    Apakah sangat relevan untuk menjawab pertanyaan dan sesuai dengan documents? (ya/tidak)
     """
     res = llm.invoke(prompt)
     return {**state, "relevant": "ya" in res.content.lower()}
@@ -155,7 +155,7 @@ def enhanced_generation_node(state: AgentState) -> AgentState:
     context = "\n".join(state.get("docs", []) + state.get("external_docs", []))
     prompt = f"""
     Kamu adalah asisten ahli UU Perlindungan Data Pribadi (PDP) di Indonesia.
-    Gabungkan informasi dari berbagai sumber berikut untuk menjawab pertanyaan secara komprehensif.
+    Utamakan mengambil dari documents lalu gabungkan informasi dari berbagai sumber berikut untuk menjawab pertanyaan secara komprehensif.
 
     Pertanyaan: {q}
     Konteks: {context}
