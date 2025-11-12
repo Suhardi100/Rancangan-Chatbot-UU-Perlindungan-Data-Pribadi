@@ -8,27 +8,19 @@ DENGAN RAHMAT TUHAN YANG MAHA ESA
 PRESIDEN REPUBLIK INDONESIA,
 
 Menimbang:
-a.
-
-bahwa pelindungan data pribadi merupakan salah satu hak asasi manusia yang merupakan bagian dari
+a. bahwa pelindungan data pribadi merupakan salah satu hak asasi manusia yang merupakan bagian dari
 pelindungan diri pribadi maka perlu diberikan landasan hukum untuk memberikan keamanan atas data
 pribadi, berdasarkan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945;
 
-b.
-
-bahwa pelindungan data pribadi ditujukan untuk menjamin hak warga negara atas pelindungan diri pribadi
+b. bahwa pelindungan data pribadi ditujukan untuk menjamin hak warga negara atas pelindungan diri pribadi
 dan menumbuhkan kesadaran masyarakat serta menjamin pengakuan dan penghormatan atas
 pentingnya pelindungan data pribadi;
 
-c.
-
-bahwa pengaturan data pribadi saat ini terdapat di dalam beberapa peraturan perundang-undangan maka
+c. bahwa pengaturan data pribadi saat ini terdapat di dalam beberapa peraturan perundang-undangan maka
 untuk meningkatkan efektivitas dalam pelaksanaan pelindungan data pribadi diperlukan pengaturan
 mengenai pelindungan data pribadi dalam suatu undang-undang;
 
-d.
-
-bahwa berdasarkan pertimbangan sebagaimana dimaksud dalam huruf a, huruf b, dan huruf c, perlu
+d. bahwa berdasarkan pertimbangan sebagaimana dimaksud dalam huruf a, huruf b, dan huruf c, perlu
 membentuk Undang-Undang tentang Pelindungan Data Pribadi.
 
 Mengingat:
@@ -53,52 +45,34 @@ BAB I
 
 Pasal 1
 Dalam Undang-Undang ini yang dimaksud dengan:
-1.
-
-Data Pribadi adalah data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara
+1. Data Pribadi adalah data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara
 tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung
 melalui sistem elektronik atau nonelektronik.
 
-2.
-
-Pelindungan Data Pribadi adalah keseluruhan upaya untuk melindungi Data Pribadi dalam rangkaian
+2. Pelindungan Data Pribadi adalah keseluruhan upaya untuk melindungi Data Pribadi dalam rangkaian
 pemrosesan Data Pribadi guna menjamin hak konstitusional subjek Data Pribadi.
 
-3.
-
-Informasi adalah keterangan, pernyataan, gagasan, dan tanda-tanda yang mengandung nilai, makna, dan
+3. Informasi adalah keterangan, pernyataan, gagasan, dan tanda-tanda yang mengandung nilai, makna, dan
 pesan, baik data, fakta, maupun penjelasannya yang dapat dilihat, didengar, dan dibaca yang disajikan
 dalam berbagai kemasan dan format sesuai dengan perkembangan teknologi informasi dan komunikasi
 secara elektronik ataupun nonelektronik.
 
-4.
-
-Pengendali Data Pribadi adalah setiap orang, badan publik, dan organisasi internasional yang bertindak
+4. Pengendali Data Pribadi adalah setiap orang, badan publik, dan organisasi internasional yang bertindak
 sendiri-sendiri atau bersama-sama dalam menentukan tujuan dan melakukan kendali pemrosesan Data
 Pribadi.
 
-5.
-
-Prosesor Data Pribadi adalah setiap orang, badan publik, dan organisasi internasional yang bertindak
+5. Prosesor Data Pribadi adalah setiap orang, badan publik, dan organisasi internasional yang bertindak
 sendiri-sendiri atau bersama-sama dalam melakukan pemrosesan Data Pribadi atas nama Pengendali
 Data Pribadi.
 
-6.
+6. Subjek Data Pribadi adalah orang perseorangan yang pada dirinya melekat Data Pribadi.
 
-Subjek Data Pribadi adalah orang perseorangan yang pada dirinya melekat Data Pribadi.
+7. Setiap Orang adalah orang perseorangan atau korporasi.
 
-7.
-
-Setiap Orang adalah orang perseorangan atau korporasi.
-
-8.
-
-Korporasi adalah kumpulan orang dan/atau kekayaan yang terorganisasi baik yang berbadan hukum
+8. Korporasi adalah kumpulan orang dan/atau kekayaan yang terorganisasi baik yang berbadan hukum
 maupun tidak berbadan hukum.
 
-9.
-
-Badan Publik adalah lembaga eksekutif, legislatif, yudikatif, dan badan lain yang fungsi dan tugas
+9. Badan Publik adalah lembaga eksekutif, legislatif, yudikatif, dan badan lain yang fungsi dan tugas
 pokoknya berkaitan dengan penyelenggaraan negara, yang sebagian atau seluruh dananya bersumber
 dari Anggaran Pendapatan dan Belanja Negara dan/atau Anggaran Pendapatan dan Belanja Daerah, atau
 organisasi nonpemerintah sepanjang sebagian atau seluruh dananya bersumber dari Anggaran
@@ -110,36 +84,18 @@ masyarakat, dan/atau luar negeri.
 Organisasi Internasional adalah organisasi yang diakui sebagai subjek hukum internasional dan
 mempunyai kapasitas untuk membuat perjanjian internasional.
 
-11.
-
-Pemerintah Pusat yang selanjutnya disebut Pemerintah adalah Presiden Republik Indonesia yang
+11. Pemerintah Pusat yang selanjutnya disebut Pemerintah adalah Presiden Republik Indonesia yang
 memegang kekuasaan pemerintahan Negara Republik Indonesia sebagaimana dimaksud dalam UndangUndang Dasar Negara Republik Indonesia Tahun 1945.
 
 Pasal 2
-(1)
-
-Undang-Undang ini berlaku untuk Setiap Orang, Badan Publik, dan Organisasi Internasional yang
+(1) Undang-Undang ini berlaku untuk Setiap Orang, Badan Publik, dan Organisasi Internasional yang
 melakukan perbuatan hukum sebagaimana diatur dalam Undang-Undang ini:
-a.
+a. yang berada di wilayah hukum Negara Republik Indonesia; dan
 
-yang berada di wilayah hukum Negara Republik Indonesia; dan
-
-b.
-
-di luar wilayah hukum Negara Republik Indonesia, yang memiliki akibat hukum:
-1.
-
-di wilayah hukum Negara Republik Indonesia; dan/atau
-
-2 / 38
-
-2.
-(2)
-
-bagi Subjek Data Pribadi warga negara Indonesia di luar wilayah hukum Negara Republik
-Indonesia.
-
-Undang-Undang ini tidak berlaku untuk pemrosesan Data Pribadi oleh orang perseorangan dalam
+b. di luar wilayah hukum Negara Republik Indonesia, yang memiliki akibat hukum:
+1. di wilayah hukum Negara Republik Indonesia; dan/atau
+2. bagi Subjek Data Pribadi warga negara Indonesia di luar wilayah hukum Negara Republik
+Indonesia. Undang-Undang ini tidak berlaku untuk pemrosesan Data Pribadi oleh orang perseorangan dalam
 kegiatan pribadi atau rumah tangga.
 
 BAB II
@@ -147,37 +103,14 @@ ASAS
 
 Pasal 3
 Undang-Undang ini berasaskan:
-a.
-
-pelindungan;
-
-b.
-
-kepastian hukum;
-
-c.
-
-kepentingan umum;
-
-d.
-
-kemanfaatan;
-
-e.
-
-kehati-hatian;
-
-f.
-
-keseimbangan;
-
-g.
-
-pertanggungjawaban; dan
-
-h.
-
-kerahasiaan.
+a. pelindungan;
+b. kepastian hukum;
+c. kepentingan umum;
+d. kemanfaatan;
+e. kehati-hatian;
+f. keseimbangan;
+g. pertanggungjawaban; dan
+h. kerahasiaan.
 
 BAB III
 JENIS DATA PRIBADI
