@@ -197,22 +197,3 @@ workflow.add_conditional_edges(
     {"Yes": END, "No": "Retrieve"}
 )
 runnable_graph = workflow.compile()
-
-# ================================
-# 💬 Streamlit Frontend
-# ================================
-st.set_page_config(page_title="Chatbot UU Cipta Kerja 🇮🇩", layout="wide")
-
-st.title("📘 Chatbot UU Perlindungan Data Pribadi (Agentic RAG)")
-st.write("Tanyakan apa pun seputar UU No. 27 Tahun 2022 tentang Perlindungan Data Pribadi (PDP)")
-
-query = st.text_area("Masukkan pertanyaan Anda:", placeholder="Contoh: Apa isi Pasal tentang perlindungan data pribadi?")
-if st.button("Jalankan Analisis"):
-    with st.spinner("Sedang menganalisis..."):
-        state = {"question": query}
-        result = runnable_graph.invoke(state)
-        st.success("✅ Jawaban Ditemukan")
-        st.markdown("### **Jawaban:**")
-        st.write(result["answer"])
-        st.markdown("### **Alasan Pemilihan Tools:**")
-        st.write(result.get("reasoning", ""))
