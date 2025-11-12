@@ -116,7 +116,7 @@ def tool_selection_node(state: AgentState) -> AgentState:
 def multi_source_retrieve_node(state: AgentState) -> AgentState:
     q = state["question"]
     selected = state.get("selected_tools", [])
-    internal_docs = [f"Isi UU Cipta Kerja terkait: {q}"]
+    internal_docs = [f"Isi UU Perlindungan Data Pribadi (PDP) terkait: {q}"]
     external_docs = []
 
     for tool_name in selected:
@@ -136,7 +136,7 @@ def enhanced_grade_node(state: AgentState) -> AgentState:
     q = state["question"]
     all_docs = state.get("docs", []) + state.get("external_docs", [])
     prompt = f"""
-    Evaluasi relevansi dokumen berikut untuk pertanyaan UU Cipta Kerja ini:
+    Evaluasi relevansi dokumen berikut untuk pertanyaan UU Perlindungan Data Pribadi (PDP) ini:
 
     Pertanyaan: {q}
     Dokumen: {all_docs}
@@ -154,7 +154,7 @@ def enhanced_generation_node(state: AgentState) -> AgentState:
     q = state["question"]
     context = "\n".join(state.get("docs", []) + state.get("external_docs", []))
     prompt = f"""
-    Kamu adalah asisten ahli UU Cipta Kerja di Indonesia.
+    Kamu adalah asisten ahli UU Perlindungan Data Pribadi (PDP) di Indonesia.
     Gabungkan informasi dari berbagai sumber berikut untuk menjawab pertanyaan secara komprehensif.
 
     Pertanyaan: {q}
@@ -203,10 +203,10 @@ runnable_graph = workflow.compile()
 # ================================
 st.set_page_config(page_title="Chatbot UU Cipta Kerja 🇮🇩", layout="wide")
 
-st.title("📘 Chatbot UU Cipta Kerja (Agentic RAG)")
-st.write("Tanyakan apa pun seputar UU No. 11 Tahun 2020 tentang Cipta Kerja")
+st.title("📘 Chatbot UU Perlindungan Data Pribadi (Agentic RAG)")
+st.write("Tanyakan apa pun seputar UU No. 27 Tahun 2022 tentang Perlindungan Data Pribadi (PDP)")
 
-query = st.text_area("Masukkan pertanyaan Anda:", placeholder="Contoh: Apa isi Pasal tentang ketenagakerjaan?")
+query = st.text_area("Masukkan pertanyaan Anda:", placeholder="Contoh: Apa isi Pasal tentang perlindungan data pribadi?")
 if st.button("Jalankan Analisis"):
     with st.spinner("Sedang menganalisis..."):
         state = {"question": query}
