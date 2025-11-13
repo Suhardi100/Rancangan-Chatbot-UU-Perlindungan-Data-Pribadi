@@ -12,7 +12,6 @@ from langgraph.graph import StateGraph, END
 from langsmith import traceable
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import FAISS
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 # ================================
 # 🔧 Konfigurasi Awal
@@ -20,10 +19,10 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 os.environ["TAVILY_API_KEY"] = "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"
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
 os.environ["LANGCHAIN_API_KEY"] = "ls__YourLangSmithKeyHere"
-os.environ["LANGCHAIN_PROJECT"] = "UU-CiptaKerja-AgenticRAG"
+os.environ["LANGCHAIN_PROJECT"] = "UU-PDP-AgenticRAG"
 
 # ================================
-# 🔮 Setup Google Gemini
+# 🔮 Setup Google Gemini (LLM)
 # ================================
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.0-flash-lite",
@@ -37,13 +36,45 @@ llm = ChatGoogleGenerativeAI(
 loader = TextLoader("uu_pdp.txt", encoding='utf-8')
 documents = loader.load()
 
-# Split dokumen panjang menjadi potongan untuk pencarian efisien
+# Split dokumen menjadi potongan agar efisien dalam pencarian
 splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
 texts = splitter.split_documents(documents)
 
-# Buat embedding untuk pencarian semantik di dalam UU PDP
-embedding_model = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key="AIzaSyCWV_230ec-t_xUZ2Vsj1XXJDSx57UaJlA")
-vectorstore = FAISS.from_documents(texts, embedding_model)
+# ================================
+# 🧠 Buat Vectorstore Aman
+# ================================
+# Beberapa embedding API (Gemini) sering gagal pada dokumen panjang.
+# Solusi: batasi panjang teks, gunakan batch kecil, dan fallback ke OpenAI jika perlu.
+try:
+    from langchain_google_genai import GoogleGenerativeAIEmbeddings
+    embedding_model = GoogleGenerativeAIEmbeddings(
+        model="models/embedding-001",
+        google_api_key="AIzaSyCWV_230ec-t_xUZ2Vsj1XXJDSx57UaJlA"
+    )
+
+    # Buat embedding satu per satu (aman terhadap token limit)
+    vectors = []
+    metadatas = []
+    for doc in texts:
+        try:
+            emb = embedding_model.embed_query(doc.page_content[:2000])
+            vectors.append(emb)
+            metadatas.append(doc.metadata)
+        except Exception as e:
+            print(f"[Warning] Gagal embedding satu dokumen: {e}")
+
+    from langchain.vectorstores import FAISS
+    vectorstore = FAISS.from_embeddings(
+        [(texts[i].page_content, vectors[i]) for i in range(len(vectors))],
+        embedding_model
+    )
+
+except Exception as e:
+    print(f"[Warning] Embedding Gemini gagal total: {e}")
+    print("Fallback ke OpenAIEmbeddings agar tetap berjalan...")
+    from langchain.embeddings import OpenAIEmbeddings
+    embedding_model = OpenAIEmbeddings()
+    vectorstore = FAISS.from_documents(texts, embedding_model)
 
 # ================================
 # 🧰 Tools Bahasa Indonesia
@@ -90,9 +121,9 @@ class AgentState(TypedDict):
 def tool_selection_node(state: AgentState) -> AgentState:
     q = state["question"]
     prompt = f"""
-    Kamu adalah asisten ahli UU Perlindungan Data Pribadi. 
-    Prioritaskan pencarian dari dokumen UU PDP terlebih dahulu. 
-    Jika tidak ditemukan di dokumen, baru gunakan tools lain.
+    Kamu adalah asisten hukum ahli UU Perlindungan Data Pribadi (PDP).
+    Selalu utamakan isi dari dokumen UU PDP terlebih dahulu.
+    Hanya gunakan tools lain jika tidak ada jawabannya di dokumen.
 
     Pertanyaan: {q}
 
@@ -124,7 +155,7 @@ def multi_source_retrieve_node(state: AgentState) -> AgentState:
     q = state["question"]
     selected = state.get("selected_tools", [])
 
-    # Cari dari dokumen UU PDP
+    # Ambil hasil pencarian dari dokumen UU PDP
     search_results = vectorstore.similarity_search(q, k=5)
     internal_docs = [doc.page_content for doc in search_results]
 
@@ -165,14 +196,14 @@ def enhanced_generation_node(state: AgentState) -> AgentState:
     context = "\n".join(state.get("docs", []) + state.get("external_docs", []))
     prompt = f"""
     Kamu adalah pakar hukum yang menjawab berdasarkan isi dokumen UU Perlindungan Data Pribadi (PDP).
-    Utamakan isi pasal atau penjelasan langsung dari dokumen UU PDP terlebih dahulu. 
+    Utamakan isi pasal atau penjelasan langsung dari dokumen UU PDP terlebih dahulu.
     Jika tidak ditemukan di dokumen, baru tambahkan konteks dari sumber luar.
 
     Pertanyaan: {q}
     Konteks dari dokumen dan sumber luar:
     {context}
 
-    Jawablah secara lengkap dalam Bahasa Indonesia formal dan sebutkan sumber (UU PDP Pasal X, Wikipedia, dsb).
+    Jawablah secara lengkap dalam Bahasa Indonesia formal dan sebutkan sumber (misalnya: UU PDP Pasal 4, Wikipedia, dsb).
     """
     res = llm.invoke(prompt)
     return {**state, "answer": res.content.strip()}
