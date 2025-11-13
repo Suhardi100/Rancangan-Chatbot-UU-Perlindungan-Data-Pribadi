@@ -54,7 +54,7 @@ tools = {
 }
 
 # ================================
-# 📚 Load Dokumen UU Cipta Kerja
+# 📚 Load Dokumen UU PDP
 # ================================
 loader = TextLoader("uu_pdp.txt", encoding='utf-8')
 documents = loader.load()
@@ -116,7 +116,9 @@ def tool_selection_node(state: AgentState) -> AgentState:
 def multi_source_retrieve_node(state: AgentState) -> AgentState:
     q = state["question"]
     selected = state.get("selected_tools", [])
-    internal_docs = [f"Isi UU Perlindungan Data Pribadi (PDP) terkait: {q}"]
+    
+    # Gunakan konten aktual dari dokumen uu_pdp.txt
+    internal_docs = [doc.page_content for doc in documents]
     external_docs = []
 
     for tool_name in selected:
@@ -193,7 +195,7 @@ workflow.add_edge("Grade", "Generate")
 workflow.add_edge("Generate", "Evaluate")
 workflow.add_conditional_edges(
     "Evaluate",
-    lambda s: "Yes" if s["answered"] else "No",
+    lambda s: "Yes" if s.get("answered") else "No",
     {"Yes": END, "No": "Retrieve"}
 )
 runnable_graph = workflow.compile()
