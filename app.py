@@ -73,6 +73,28 @@ class AgentState(TypedDict):
     reasoning: Optional[str]
 
 # ================================
+# 🔍 Simple Search Function untuk Context Management
+# ================================
+def search_in_documents(question: str, documents: List, max_chunks: int = 3) -> List[str]:
+    """Cari bagian relevan dari dokumen berdasarkan keyword matching sederhana"""
+    question_lower = question.lower()
+    relevant_chunks = []
+    
+    for doc in documents:
+        content = doc.page_content
+        # Simple keyword matching
+        if any(keyword in content.lower() for keyword in question_lower.split()):
+            relevant_chunks.append(content)
+            if len(relevant_chunks) >= max_chunks:
+                break
+    
+    # Jika tidak ada yang relevan, ambil beberapa chunk pertama
+    if not relevant_chunks and documents:
+        relevant_chunks = [doc.page_content for doc in documents[:max_chunks]]
+    
+    return relevant_chunks
+
+# ================================
 # 🧠 Node: Tool Selection
 # ================================
 @traceable
@@ -110,15 +132,15 @@ def tool_selection_node(state: AgentState) -> AgentState:
     return {**state, "selected_tools": tools_selected, "reasoning": reasoning}
 
 # ================================
-# 🔍 Node: Multi Source Retrieval
+# 🔍 Node: Multi Source Retrieval dengan Context Management
 # ================================
 @traceable
 def multi_source_retrieve_node(state: AgentState) -> AgentState:
     q = state["question"]
     selected = state.get("selected_tools", [])
     
-    # Gunakan konten aktual dari dokumen uu_pdp.txt
-    internal_docs = [doc.page_content for doc in documents]
+    # Hanya ambil bagian relevan dari dokumen, bukan semua
+    internal_docs = search_in_documents(q, documents, max_chunks=3)
     external_docs = []
 
     for tool_name in selected:
@@ -161,18 +183,28 @@ def enhanced_grade_node(state: AgentState) -> AgentState:
     return {**state, "relevant": "ya" in res.content.lower()}
 
 # ================================
-# 🧩 Node: Generate Final Answer
+# 🧩 Node: Generate Final Answer dengan Context Management
 # ================================
 @traceable
 def enhanced_generation_node(state: AgentState) -> AgentState:
     q = state["question"]
-    context = "\n".join(state.get("docs", []) + state.get("external_docs", []))
+    all_context = state.get("docs", []) + state.get("external_docs", [])
+    
+    # Batasi context length untuk menghindari token overflow
+    max_context_length = 8000  # Sesuaikan dengan model
+    context_str = ""
+    for doc in all_context:
+        if len(context_str) + len(str(doc)) < max_context_length:
+            context_str += str(doc) + "\n"
+        else:
+            break
+    
     prompt = f"""
     Kamu adalah asisten ahli UU Perlindungan Data Pribadi (PDP) di Indonesia.
     Utamakan mengambil dari documents lalu gabungkan informasi dari berbagai sumber berikut untuk menjawab pertanyaan secara komprehensif.
 
     Pertanyaan: {q}
-    Konteks: {context}
+    Konteks: {context_str}
 
     Jawablah dengan mengutamakan yang ada di dokumen tersebut dengan bahasa Indonesia formal, dan sebutkan sumber (UU, Wikipedia, Tavily, dll).
     """
