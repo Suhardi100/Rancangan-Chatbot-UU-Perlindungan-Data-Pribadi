@@ -7,8 +7,8 @@ import app  # memanggil logika utama dari app.py
 # 🌿 KONFIGURASI HALAMAN
 # ================================
 st.set_page_config(
-    page_title="Chatbot Pintar UU Cipta Kerja",
-    page_icon="🇮🇩",
+    page_title="Chatbot Pintar UU Perlindungan Data Pribadi (PDP)",
+    page_icon="Suhardi",
     layout="wide",
 )
 
@@ -152,9 +152,9 @@ with st.sidebar:
 # 🌿 HEADER
 # ================================
 st.markdown("""
-<h2>🤖 Chatbot UU Cipta Kerja (Agentic RAG with Langchain)</h2>
+<h2>🤖 Chatbot UU Perlindungan Data Pribadi (Agentic RAG with Langchain)</h2>
 <p class='subtitle'>
-Tanyakan apa pun seputar <b>UU No. 11 Tahun 2020</b> tentang Cipta Kerja.<br>
+Tanyakan apa pun seputar <b>UU No. 27 Tahun 2022</b> tentang Perlindungan Data Pribadi (PDP).<br>
 Chatbot ini dibuat oleh <b>SUHARDI</b> untuk memenuhi tugas akhir pembelajaran model bahasa besar (large language model).
 </p>
 """, unsafe_allow_html=True)
@@ -170,14 +170,14 @@ with chat_box:
         if role == "user":
             st.markdown(f"<div class='chat-bubble-user'><b>Anda ({time})</b><br>{text}</div>", unsafe_allow_html=True)
         else:
-            st.markdown(f"<div class='chat-bubble-assistant'><b>Suhardi-Chatbot ({time})</b><br>{text}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='chat-bubble-assistant'><b>Jawaban Chatbot Suhardi ({time})</b><br>{text}</div>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 # ================================
 # 💬 INPUT CHAT
 # ================================
 if st.session_state.viewing_history_index is None:
-    prompt = st.chat_input("💬 Tuliskan pertanyaan Anda seputar UU Cipta Kerja No. 11 Tahun 2020 pada kolom ini...")
+    prompt = st.chat_input("💬 Tuliskan pertanyaan Anda seputar UU Perlindungan Data Pribadi (PDP) No. 27 Tahun 2022 pada kolom ini...")
     if prompt:
         tz = pytz.timezone("Asia/Jakarta")
         current_time = datetime.datetime.now(tz).strftime("%H:%M:%S")
