@@ -73,28 +73,6 @@ class AgentState(TypedDict):
     reasoning: Optional[str]
 
 # ================================
-# 🔍 Simple Search Function untuk Context Management
-# ================================
-def search_in_documents(question: str, documents: List, max_chunks: int = 3) -> List[str]:
-    """Cari bagian relevan dari dokumen berdasarkan keyword matching sederhana"""
-    question_lower = question.lower()
-    relevant_chunks = []
-    
-    for doc in documents:
-        content = doc.page_content
-        # Simple keyword matching
-        if any(keyword in content.lower() for keyword in question_lower.split()):
-            relevant_chunks.append(content)
-            if len(relevant_chunks) >= max_chunks:
-                break
-    
-    # Jika tidak ada yang relevan, ambil beberapa chunk pertama
-    if not relevant_chunks and documents:
-        relevant_chunks = [doc.page_content for doc in documents[:max_chunks]]
-    
-    return relevant_chunks
-
-# ================================
 # 🧠 Node: Tool Selection
 # ================================
 @traceable
@@ -132,15 +110,15 @@ def tool_selection_node(state: AgentState) -> AgentState:
     return {**state, "selected_tools": tools_selected, "reasoning": reasoning}
 
 # ================================
-# 🔍 Node: Multi Source Retrieval dengan Context Management
+# 🔍 Node: Multi Source Retrieval
 # ================================
 @traceable
 def multi_source_retrieve_node(state: AgentState) -> AgentState:
     q = state["question"]
     selected = state.get("selected_tools", [])
     
-    # Hanya ambil bagian relevan dari dokumen, bukan semua
-    internal_docs = search_in_documents(q, documents, max_chunks=3)
+    # Gunakan konten aktual dari dokumen uu_pdp.txt
+    internal_docs = [doc.page_content for doc in documents]
     external_docs = []
 
     for tool_name in selected:
@@ -183,28 +161,49 @@ def enhanced_grade_node(state: AgentState) -> AgentState:
     return {**state, "relevant": "ya" in res.content.lower()}
 
 # ================================
-# 🧩 Node: Generate Final Answer dengan Context Management
+# 🧩 Node: Generate Final Answer dengan Context Window Management
 # ================================
 @traceable
 def enhanced_generation_node(state: AgentState) -> AgentState:
     q = state["question"]
-    all_context = state.get("docs", []) + state.get("external_docs", [])
+    all_docs = state.get("docs", []) + state.get("external_docs", [])
     
-    # Batasi context length untuk menghindari token overflow
-    max_context_length = 8000  # Sesuaikan dengan model
-    context_str = ""
-    for doc in all_context:
-        if len(context_str) + len(str(doc)) < max_context_length:
-            context_str += str(doc) + "\n"
+    # Context Window Management - batasi total panjang konteks
+    MAX_CONTEXT_LENGTH = 10000  # Sesuaikan dengan model Gemini
+    
+    # Gabungkan dokumen dengan prioritas pada dokumen internal
+    context_parts = []
+    total_length = 0
+    
+    # Prioritaskan dokumen internal terlebih dahulu
+    for doc in state.get("docs", []):
+        doc_str = str(doc)
+        if total_length + len(doc_str) <= MAX_CONTEXT_LENGTH:
+            context_parts.append(doc_str)
+            total_length += len(doc_str)
+    
+    # Tambahkan dokumen eksternal jika masih ada ruang
+    for ext_doc in state.get("external_docs", []):
+        ext_doc_str = str(ext_doc)
+        if total_length + len(ext_doc_str) <= MAX_CONTEXT_LENGTH:
+            context_parts.append(ext_doc_str)
+            total_length += len(ext_doc_str)
         else:
-            break
+            # Jika hampir penuh, tambahkan sebagian saja
+            remaining_space = MAX_CONTEXT_LENGTH - total_length
+            if remaining_space > 100:  # Minimal 100 karakter
+                truncated_doc = ext_doc_str[:remaining_space] + "..."
+                context_parts.append(truncated_doc)
+                break
+    
+    context = "\n".join(context_parts)
     
     prompt = f"""
     Kamu adalah asisten ahli UU Perlindungan Data Pribadi (PDP) di Indonesia.
     Utamakan mengambil dari documents lalu gabungkan informasi dari berbagai sumber berikut untuk menjawab pertanyaan secara komprehensif.
 
     Pertanyaan: {q}
-    Konteks: {context_str}
+    Konteks: {context}
 
     Jawablah dengan mengutamakan yang ada di dokumen tersebut dengan bahasa Indonesia formal, dan sebutkan sumber (UU, Wikipedia, Tavily, dll).
     """
