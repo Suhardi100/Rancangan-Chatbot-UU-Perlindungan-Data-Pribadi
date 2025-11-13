@@ -161,43 +161,12 @@ def enhanced_grade_node(state: AgentState) -> AgentState:
     return {**state, "relevant": "ya" in res.content.lower()}
 
 # ================================
-# 🧩 Node: Generate Final Answer dengan Context Window Management
+# 🧩 Node: Generate Final Answer
 # ================================
 @traceable
 def enhanced_generation_node(state: AgentState) -> AgentState:
     q = state["question"]
-    all_docs = state.get("docs", []) + state.get("external_docs", [])
-    
-    # Context Window Management - batasi total panjang konteks
-    MAX_CONTEXT_LENGTH = 10000  # Sesuaikan dengan model Gemini
-    
-    # Gabungkan dokumen dengan prioritas pada dokumen internal
-    context_parts = []
-    total_length = 0
-    
-    # Prioritaskan dokumen internal terlebih dahulu
-    for doc in state.get("docs", []):
-        doc_str = str(doc)
-        if total_length + len(doc_str) <= MAX_CONTEXT_LENGTH:
-            context_parts.append(doc_str)
-            total_length += len(doc_str)
-    
-    # Tambahkan dokumen eksternal jika masih ada ruang
-    for ext_doc in state.get("external_docs", []):
-        ext_doc_str = str(ext_doc)
-        if total_length + len(ext_doc_str) <= MAX_CONTEXT_LENGTH:
-            context_parts.append(ext_doc_str)
-            total_length += len(ext_doc_str)
-        else:
-            # Jika hampir penuh, tambahkan sebagian saja
-            remaining_space = MAX_CONTEXT_LENGTH - total_length
-            if remaining_space > 100:  # Minimal 100 karakter
-                truncated_doc = ext_doc_str[:remaining_space] + "..."
-                context_parts.append(truncated_doc)
-                break
-    
-    context = "\n".join(context_parts)
-    
+    context = "\n".join(state.get("docs", []) + state.get("external_docs", []))
     prompt = f"""
     Kamu adalah asisten ahli UU Perlindungan Data Pribadi (PDP) di Indonesia.
     Utamakan mengambil dari documents lalu gabungkan informasi dari berbagai sumber berikut untuk menjawab pertanyaan secara komprehensif.
