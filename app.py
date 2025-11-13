@@ -116,17 +116,15 @@ def tool_selection_node(state: AgentState) -> AgentState:
 def multi_source_retrieve_node(state: AgentState) -> AgentState:
     q = state["question"]
     selected = state.get("selected_tools", [])
-    internal_docs = [f"Isi UU Perlindungan Data Pribadi (PDP) terkait: {q}"]
+    
+    # Gunakan konten aktual dari dokumen uu_pdp.txt
+    internal_docs = [doc.page_content for doc in documents]
     external_docs = []
 
     for tool_name in selected:
         if tool_name in tools:
             try:
-                result = tools[tool_name].run(q)
-                # Handle case where result is a list (from TavilySearch)
-                if isinstance(result, list):
-                    result = " | ".join([str(item) for item in result])
-                external_docs.append(str(result))
+                external_docs.append(tools[tool_name].run(q))
             except Exception as e:
                 external_docs.append(f"{tool_name} gagal: {str(e)}")
 
@@ -197,7 +195,7 @@ workflow.add_edge("Grade", "Generate")
 workflow.add_edge("Generate", "Evaluate")
 workflow.add_conditional_edges(
     "Evaluate",
-    lambda s: "Yes" if s["answered"] else "No",
+    lambda s: "Yes" if s.get("answered") else "No",
     {"Yes": END, "No": "Retrieve"}
 )
 runnable_graph = workflow.compile()
