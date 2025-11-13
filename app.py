@@ -2,7 +2,7 @@ import os
 import streamlit as st
 from typing import TypedDict, List, Optional
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_community.document_loaders import TextLoader
+from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain.tools import Tool
 from langchain_community.tools.wikipedia.tool import WikipediaQueryRun
 from langchain_community.tools.arxiv.tool import ArxivQueryRun
@@ -10,8 +10,6 @@ from langchain_community.utilities import WikipediaAPIWrapper, ArxivAPIWrapper
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langgraph.graph import StateGraph, END
 from langsmith import traceable
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores import FAISS
 
 # ================================
 # 🔧 Konfigurasi Awal
@@ -19,62 +17,16 @@ from langchain.vectorstores import FAISS
 os.environ["TAVILY_API_KEY"] = "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"
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
 os.environ["LANGCHAIN_API_KEY"] = "ls__YourLangSmithKeyHere"
-os.environ["LANGCHAIN_PROJECT"] = "UU-PDP-AgenticRAG"
+os.environ["LANGCHAIN_PROJECT"] = "UU-CiptaKerja-AgenticRAG"
 
 # ================================
-# 🔮 Setup Google Gemini (LLM)
+# 🔮 Setup Google Gemini
 # ================================
 llm = ChatGoogleGenerativeAI(
-    model="gemini-2.0-flash-lite",
+    model="gemini-2.5-flash-lite",
     temperature=0.3,
     google_api_key="AIzaSyCWV_230ec-t_xUZ2Vsj1XXJDSx57UaJlA"
 )
-
-# ================================
-# 📚 Load Dokumen UU PDP
-# ================================
-loader = TextLoader("uu_pdp.txt", encoding='utf-8')
-documents = loader.load()
-
-# Split dokumen menjadi potongan agar efisien dalam pencarian
-splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
-texts = splitter.split_documents(documents)
-
-# ================================
-# 🧠 Buat Vectorstore Aman
-# ================================
-# Beberapa embedding API (Gemini) sering gagal pada dokumen panjang.
-# Solusi: batasi panjang teks, gunakan batch kecil, dan fallback ke OpenAI jika perlu.
-try:
-    from langchain_google_genai import GoogleGenerativeAIEmbeddings
-    embedding_model = GoogleGenerativeAIEmbeddings(
-        model="models/embedding-001",
-        google_api_key="AIzaSyCWV_230ec-t_xUZ2Vsj1XXJDSx57UaJlA"
-    )
-
-    # Buat embedding satu per satu (aman terhadap token limit)
-    vectors = []
-    metadatas = []
-    for doc in texts:
-        try:
-            emb = embedding_model.embed_query(doc.page_content[:2000])
-            vectors.append(emb)
-            metadatas.append(doc.metadata)
-        except Exception as e:
-            print(f"[Warning] Gagal embedding satu dokumen: {e}")
-
-    from langchain.vectorstores import FAISS
-    vectorstore = FAISS.from_embeddings(
-        [(texts[i].page_content, vectors[i]) for i in range(len(vectors))],
-        embedding_model
-    )
-
-except Exception as e:
-    print(f"[Warning] Embedding Gemini gagal total: {e}")
-    print("Fallback ke OpenAIEmbeddings agar tetap berjalan...")
-    from langchain.embeddings import OpenAIEmbeddings
-    embedding_model = OpenAIEmbeddings()
-    vectorstore = FAISS.from_documents(texts, embedding_model)
 
 # ================================
 # 🧰 Tools Bahasa Indonesia
@@ -87,19 +39,25 @@ tools = {
     "Wikipedia": Tool(
         name="Wikipedia",
         func=wikipedia_tool.run,
-        description="Gunakan untuk menemukan konsep umum tentang UU PDP (Bahasa Indonesia)."
+        description="Gunakan untuk menemukan konsep utama, sejarah, dan hal-hal lain yang berkaitan dengan UU Perlindungan Data Pribadi (PDP) dalam Bahasa Indonesia!"
     ),
     "arXiv": Tool(
         name="arXiv",
         func=arxiv_tool.run,
-        description="Gunakan untuk referensi akademik tentang teori atau penelitian UU PDP."
+        description="Gunakan untuk referensi akademik tentang teori atau penelitian berkaitan UU Perlindungan Data Pribadi!"
     ),
     "TavilySearch": Tool(
         name="TavilySearch",
         func=tavily_tool_instance.run,
-        description="Gunakan untuk berita atau hukum terbaru terkait UU PDP."
+        description="Gunakan untuk berita UU Perlindungan Data Pribadi terbaru, peraturan Indonesia, atau putusan pengadilan!"
     )
 }
+
+# ================================
+# 📚 Load Dokumen UU Cipta Kerja
+# ================================
+loader = TextLoader("uu_pdp.txt", encoding='utf-8')
+documents = loader.load()
 
 # ================================
 # 🧩 Define Agent State
@@ -121,19 +79,23 @@ class AgentState(TypedDict):
 def tool_selection_node(state: AgentState) -> AgentState:
     q = state["question"]
     prompt = f"""
-    Kamu adalah asisten hukum ahli UU Perlindungan Data Pribadi (PDP).
-    Selalu utamakan isi dari dokumen UU PDP terlebih dahulu.
-    Hanya gunakan tools lain jika tidak ada jawabannya di dokumen.
+    Kamu adalah asisten ahli UU Pelindungan Data Pribadi yang sangat cerdas setara 100 profesor. Utamakan mencari dulu sumber yang terdapat dalam documents. Baru setelah itu, tentukan tools terbaik untuk menjawab pertanyaan berikut:
 
     Pertanyaan: {q}
 
     Tools tersedia:
-    - Documents UU PDP
-    - Wikipedia
-    - arXiv
-    - TavilySearch
+    1. Wikipedia - konsep hukum umum (Bahasa Indonesia)
+    2. arXiv - penelitian hukum akademik
+    3. TavilySearch - berita dan hukum terbaru di Indonesia
+    4. Documents UU PDP - dokumen UU Perlindungan Data Pribadi
 
-    Format jawaban:
+    Analisis:
+    - Apakah ada referensi tentang UU Perlindungan Data Pribadi (PDP) terkini Indonesia? → TavilySearch
+    - Apakah teori akademik yang berkenaan UU Perlindungan Data Pribadi (PDP) di Indonesia? → arXiv
+    - Apakah konsep dasar UU Perlindungan Data Pribadi (PDP)? → Wikipedia
+    - Apakah isi UU Perlindungan Data Pribadi (PDP) setiap pasalnya? → Documents UU PDP
+
+    Format:
     TOOLS: tool1,tool2
     REASONING: alasan
     """
@@ -154,14 +116,11 @@ def tool_selection_node(state: AgentState) -> AgentState:
 def multi_source_retrieve_node(state: AgentState) -> AgentState:
     q = state["question"]
     selected = state.get("selected_tools", [])
-
-    # Ambil hasil pencarian dari dokumen UU PDP
-    search_results = vectorstore.similarity_search(q, k=5)
-    internal_docs = [doc.page_content for doc in search_results]
-
+    internal_docs = [f"Isi UU Perlindungan Data Pribadi (PDP) terkait: {q}"]
     external_docs = []
+
     for tool_name in selected:
-        if tool_name != "Documents UU PDP" and tool_name in tools:
+        if tool_name in tools:
             try:
                 external_docs.append(tools[tool_name].run(q))
             except Exception as e:
@@ -177,12 +136,12 @@ def enhanced_grade_node(state: AgentState) -> AgentState:
     q = state["question"]
     all_docs = state.get("docs", []) + state.get("external_docs", [])
     prompt = f"""
-    Evaluasi relevansi teks berikut terhadap pertanyaan tentang UU PDP.
+    Evaluasi relevansi dokumen berikut untuk pertanyaan UU Perlindungan Data Pribadi (PDP) ini dengan documents:
 
     Pertanyaan: {q}
     Dokumen: {all_docs}
 
-    Jawab hanya 'ya' jika sangat relevan atau 'tidak' jika tidak relevan.
+    Apakah sangat relevan untuk menjawab pertanyaan dan sesuai dengan documents? (ya/tidak)
     """
     res = llm.invoke(prompt)
     return {**state, "relevant": "ya" in res.content.lower()}
@@ -195,15 +154,13 @@ def enhanced_generation_node(state: AgentState) -> AgentState:
     q = state["question"]
     context = "\n".join(state.get("docs", []) + state.get("external_docs", []))
     prompt = f"""
-    Kamu adalah pakar hukum yang menjawab berdasarkan isi dokumen UU Perlindungan Data Pribadi (PDP).
-    Utamakan isi pasal atau penjelasan langsung dari dokumen UU PDP terlebih dahulu.
-    Jika tidak ditemukan di dokumen, baru tambahkan konteks dari sumber luar.
+    Kamu adalah asisten ahli UU Perlindungan Data Pribadi (PDP) di Indonesia.
+    Utamakan mengambil dari documents lalu gabungkan informasi dari berbagai sumber berikut untuk menjawab pertanyaan secara komprehensif.
 
     Pertanyaan: {q}
-    Konteks dari dokumen dan sumber luar:
-    {context}
+    Konteks: {context}
 
-    Jawablah secara lengkap dalam Bahasa Indonesia formal dan sebutkan sumber (misalnya: UU PDP Pasal 4, Wikipedia, dsb).
+    Jawablah dengan mengutamakan yang ada di dokumen tersebut dengan bahasa Indonesia formal, dan sebutkan sumber (UU, Wikipedia, Tavily, dll).
     """
     res = llm.invoke(prompt)
     return {**state, "answer": res.content.strip()}
@@ -215,12 +172,7 @@ def enhanced_generation_node(state: AgentState) -> AgentState:
 def answer_check_node(state: AgentState) -> AgentState:
     q = state["question"]
     ans = state.get("answer", "")
-    prompt = f"""
-    Apakah jawaban ini sudah menjawab pertanyaan secara tepat?
-    Pertanyaan: {q}
-    Jawaban: {ans}
-    Jawab hanya 'ya' atau 'tidak'.
-    """
+    prompt = f"Apakah jawaban ini sudah sangat menjawab pertanyaan?\nPertanyaan: {q}\nJawaban: {ans}\nBalas hanya 'ya' atau 'tidak'."
     res = llm.invoke(prompt)
     return {**state, "answered": "ya" in res.content.lower()}
 
@@ -244,5 +196,4 @@ workflow.add_conditional_edges(
     lambda s: "Yes" if s["answered"] else "No",
     {"Yes": END, "No": "Retrieve"}
 )
-
 runnable_graph = workflow.compile()
