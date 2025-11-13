@@ -72,6 +72,7 @@ class AgentState(TypedDict):
     answered: Optional[bool]
     selected_tools: Optional[List[str]]
     reasoning: Optional[str]
+    attempt: Optional[int]  # Tambahan untuk mencegah loop
 
 # ================================
 # 🧠 Node: Tool Selection
@@ -99,7 +100,7 @@ def tool_selection_node(state: AgentState) -> AgentState:
             tools_selected = [t.strip() for t in line.replace("TOOLS:", "").split(",")]
         elif line.startswith("REASONING:"):
             reasoning = line.replace("REASONING:", "").strip()
-    return {**state, "selected_tools": tools_selected, "reasoning": reasoning}
+    return {**state, "selected_tools": tools_selected, "reasoning": reasoning, "attempt": 0}
 
 # ================================
 # 🔍 Node: Multi Source Retrieval
@@ -110,7 +111,6 @@ def multi_source_retrieve_node(state: AgentState) -> AgentState:
     selected = state.get("selected_tools", [])
     internal_docs, external_docs = [], []
 
-    # ===== Cari isi pasal langsung dari dokumen =====
     import re
     pasal_pattern = re.search(r'pasal\s*(\d+)', q)
     if pasal_pattern:
@@ -122,14 +122,12 @@ def multi_source_retrieve_node(state: AgentState) -> AgentState:
         else:
             internal_docs.append("Pasal tidak ditemukan dalam dokumen UU PDP.")
     else:
-        # Jika tidak menyebut pasal, cari berdasarkan kata kunci
         kalimat_terkait = [line for line in uu_text.splitlines() if any(word in line for word in q.split())]
         if kalimat_terkait:
             internal_docs.append("\n".join(kalimat_terkait[:10]))
         else:
             internal_docs.append("Tidak ditemukan bagian terkait dalam dokumen.")
 
-    # ===== Tambahan (opsional) dari tools eksternal =====
     for tool_name in selected:
         if tool_name in tools:
             try:
@@ -162,7 +160,6 @@ def enhanced_generation_node(state: AgentState) -> AgentState:
     q = state["question"]
     context = "\n".join(state.get("docs", []) + state.get("external_docs", []))
 
-    # Jika sudah ada isi pasal dari dokumen, tampilkan langsung tanpa mengubah
     if "pasal" in q.lower() and "tidak ditemukan" not in context.lower():
         return {**state, "answer": f"📜 Berdasarkan dokumen UU Perlindungan Data Pribadi:\n\n{context.strip()}"}
 
@@ -202,10 +199,22 @@ workflow.add_edge("ToolSelection", "Retrieve")
 workflow.add_edge("Retrieve", "Grade")
 workflow.add_edge("Grade", "Generate")
 workflow.add_edge("Generate", "Evaluate")
+
+# 🔁 Tambahkan kondisi anti-loop
+def should_continue(state: AgentState):
+    state["attempt"] = state.get("attempt", 0) + 1
+    if state["answered"]:
+        return "Yes"
+    elif state["attempt"] >= 3:
+        return "Stop"
+    else:
+        return "No"
+
 workflow.add_conditional_edges(
     "Evaluate",
-    lambda s: "Yes" if s["answered"] else "No",
-    {"Yes": END, "No": "Retrieve"}
+    should_continue,
+    {"Yes": END, "No": "Retrieve", "Stop": END}
 )
 
-runnable_graph = workflow.compile()
+# 🚀 Kompilasi workflow dengan limit lebih besar
+runnable_graph = workflow.compile(config={"recursion_limit": 50})
