@@ -23,9 +23,9 @@ os.environ["LANGCHAIN_PROJECT"] = "UU-PDP-AgenticRAG"
 # 🔮 Setup Google Gemini
 # ================================
 llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash-lite",
+    model="gemini-2.5-pro",
     temperature=0.3,
-    google_api_key="AIzaSyCWV_230ec-t_xUZ2Vsj1XXJDSx57UaJlA"
+    google_api_key="AIzaSyBI6YdES2PyWC3JU2_eDtTW1ipi6Z07DcE"
 )
 
 # ================================
@@ -208,18 +208,4 @@ workflow.add_conditional_edges(
     {"Yes": END, "No": "Retrieve"}
 )
 
-# Kompilasi workflow
 runnable_graph = workflow.compile()
-
-# ================================
-# ✅ Jalankan dengan batas rekursi aman
-# ================================
-def run_chatbot(question):
-    try:
-        result = runnable_graph.invoke(
-            {"question": question},
-            config={"recursion_limit": 50}  # batas maksimal loop LangGraph
-        )
-        return result["answer"]
-    except Exception as e:
-        return f"⚠️ Terjadi kesalahan saat menjalankan: {str(e)}"
