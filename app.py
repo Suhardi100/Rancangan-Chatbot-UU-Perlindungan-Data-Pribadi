@@ -1,6 +1,7 @@
 import os
+import re
 import streamlit as st
-from typing import TypedDict, List, Optional
+from typing import TypedDict, List, Optional, Tuple
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.document_loaders import TextLoader
 from langchain.tools import Tool
@@ -12,7 +13,7 @@ from langgraph.graph import StateGraph, END
 from langsmith import traceable
 
 # ================================
-# 🔧 Konfigurasi Awal
+# 🔧 Konfigurasi Awal (jgn lupa set key di environment jika diperlukan)
 # ================================
 os.environ["TAVILY_API_KEY"] = "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"
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
@@ -20,16 +21,16 @@ os.environ["LANGCHAIN_API_KEY"] = "ls__YourLangSmithKeyHere"
 os.environ["LANGCHAIN_PROJECT"] = "UU-PDP-AgenticRAG"
 
 # ================================
-# 🔮 Setup Google Gemini
+# 🔮 Setup LLM (Google Gemini)
 # ================================
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash-lite",
-    temperature=0.7,
+    temperature=0.0,  # deterministik agar hasil konsisten
     google_api_key="AIzaSyBI6YdES2PyWC3JU2_eDtTW1ipi6Z07DcE"
 )
 
 # ================================
-# 🧰 Tools Bahasa Indonesia
+# 🧰 Tools (tetap didefinisikan tapi TIDAK diprioritaskan)
 # ================================
 wikipedia_tool = WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper(lang="id"))
 arxiv_tool = ArxivQueryRun(api_wrapper=ArxivAPIWrapper())
@@ -39,48 +40,104 @@ tools = {
     "Wikipedia": Tool(
         name="Wikipedia",
         func=wikipedia_tool.run,
-        description="Gunakan untuk menemukan konsep hukum umum, sejarah, dan hal-hal lain yang berkaitan dengan UU Perlindungan Data Pribadi (PDP) dalam Bahasa Indonesia!"
+        description="(sekunder) konsep umum hukum dalam Bahasa Indonesia"
     ),
     "arXiv": Tool(
         name="arXiv",
         func=arxiv_tool.run,
-        description="Gunakan untuk referensi akademik tentang teori atau penelitian berkaitan UU Perlindungan Data Pribadi!"
+        description="(sekunder) referensi akademik"
     ),
     "TavilySearch": Tool(
         name="TavilySearch",
         func=tavily_tool_instance.run,
-        description="Gunakan untuk berita UU Perlindungan Data Pribadi terbaru, peraturan Indonesia, atau putusan pengadilan!"
+        description="(sekunder) berita/putusan terbaru Indonesia"
     )
 }
 
 # ================================
-# 📚 Load Dokumen UU PDP
+# 📚 Load & Parse Dokumen UU PDP (uu_pdp.txt)
 # ================================
-loader = TextLoader("uu_pdp.txt", encoding='utf-8')
+loader = TextLoader("uu_pdp.txt", encoding="utf-8")
 documents = loader.load()
-uu_text = " ".join([d.page_content for d in documents])
+raw_text = "\n".join([d.page_content for d in documents])
 
-# Fungsi untuk mencari isi pasal relevan dari teks UU
-def cari_pasal_relevan(pertanyaan: str, max_hasil: int = 3) -> List[str]:
+# Parser sederhana: pisahkan berdasarkan kata kunci "Pasal" / "Pasal X" / "Pasal nomor"
+# Jika dokumen format lain, fungsi ini tetap mengambil potongan paragraf sebagai fallback.
+def parse_pasals(text: str) -> List[Tuple[str, str]]:
     """
-    Mencari pasal-pasal relevan dari dokumen uu_pdp.txt berdasarkan kata kunci dari pertanyaan.
-    Mengambil kalimat/pasal yang mengandung kata kunci secara langsung.
+    Kembalikan list of (heading, content) di mana heading mis. 'Pasal 1', 'Pasal 2 ayat (1)', atau jika
+    tidak ada heading, pembagi berdasarkan paragraf.
     """
-    hasil = []
-    q_lower = pertanyaan.lower()
-    baris = uu_text.split("\n")
+    # Normalisasi \r\n -> \n
+    text = text.replace("\r\n", "\n")
+    # Temukan posisi heading seperti "Pasal 1", "Pasal 2.", "Pasal 3 -", case-insensitive
+    # Gunakan regex untuk menemukan "Pasal" dan nomor setelahnya
+    pattern = re.compile(r'(?i)^(pasal\s+\d+[\s\.\-\:a-z0-9\(\)]*)', re.MULTILINE)
+    matches = list(pattern.finditer(text))
 
-    for line in baris:
-        if any(kata in line.lower() for kata in q_lower.split()):
-            if line.strip() and len(line.strip()) > 20:
-                hasil.append(line.strip())
+    units = []
+    if matches:
+        # Jika ada heading, potong berdasarkan heading
+        for i, m in enumerate(matches):
+            start = m.start()
+            heading = m.group(1).strip()
+            end = matches[i+1].start() if i+1 < len(matches) else len(text)
+            content = text[start:end].strip()
+            units.append((heading, content))
+    else:
+        # Fallback: split by double newlines (paragraf)
+        paras = [p.strip() for p in text.split("\n\n") if p.strip()]
+        for idx, p in enumerate(paras, 1):
+            heading = f"Paragraf {idx}"
+            units.append((heading, p))
+    return units
 
-    # Hilangkan duplikat dan batasi hasil
-    hasil_unik = list(dict.fromkeys(hasil))
-    return hasil_unik[:max_hasil] if hasil_unik else ["(Tidak ditemukan pasal relevan dalam dokumen UU PDP)"]
+# Buat index sederhana: list of (id, heading, content, lower_content)
+parsed_units = []
+for idx, (heading, content) in enumerate(parse_pasals(raw_text), 1):
+    parsed_units.append({
+        "id": idx,
+        "heading": heading,
+        "content": content,
+        "lower": content.lower()
+    })
 
 # ================================
-# 🧩 Define Agent State
+# 🔎 Fungsi pencarian pasal (prioritas dokumen lokal)
+# ================================
+def search_units_by_question(question: str, top_k: int = 5) -> List[dict]:
+    """
+    Cari unit (pasal/paragraf) yang paling relevan terhadap question.
+    Metode sederhana: token match count (bisa ditingkatkan dengan embeddings).
+    Mengembalikan list unit dict terurut by score desc.
+    """
+    q = question.lower()
+    # tokenisasi kata kunci (hapus stopwords sederhana? di versi ini gunakan kata)
+    tokens = [t for t in re.findall(r'\w+', q) if len(t) > 2]  # kata >=3 huruf
+    scores = []
+    for u in parsed_units:
+        score = 0
+        for t in tokens:
+            if t in u["lower"]:
+                score += u["lower"].count(t)
+        if score > 0:
+            scores.append((score, u))
+    # Urutkan dan ambil top_k
+    scores.sort(key=lambda x: x[0], reverse=True)
+    top = [u for s,u in scores[:top_k]]
+    return top
+
+# Helper untuk format hasil pasal yang ditemukan
+def format_units(units: List[dict]) -> str:
+    if not units:
+        return "(tidak ditemukan pasal relevan dalam dokumen lokal UU PDP)"
+    out = []
+    for u in units:
+        out.append(f"=== {u['heading']} ===\n{u['content']}\n")
+    return "\n".join(out)
+
+# ================================
+# 🧩 Define Agent State (TypedDict)
 # ================================
 class AgentState(TypedDict):
     question: str
@@ -93,110 +150,118 @@ class AgentState(TypedDict):
     reasoning: Optional[str]
 
 # ================================
-# 🧠 Node: Tool Selection
+# 🧠 Node: Tool Selection (FORCE Documents primary)
 # ================================
 @traceable
 def tool_selection_node(state: AgentState) -> AgentState:
-    q = state["question"]
-    prompt = f"""
-    Kamu adalah asisten ahli UU Pelindungan Data Pribadi.
-    Utamakan menggunakan dokumen UU PDP terlebih dahulu sebelum memakai tools eksternal.
-
-    Pertanyaan: {q}
-
-    Pilih tools yang paling sesuai:
-    - Wikipedia → konsep umum hukum
-    - arXiv → teori akademik
-    - TavilySearch → berita hukum terbaru
-    - Documents UU PDP → isi pasal per pasal
-
-    Format jawaban:
-    TOOLS: tool1,tool2
-    REASONING: alasan
     """
-    result = llm.invoke(prompt)
-    lines = result.content.strip().split("\n")
-    tools_selected, reasoning = [], ""
-    for line in lines:
-        if line.startswith("TOOLS:"):
-            tools_selected = [t.strip() for t in line.replace("TOOLS:", "").split(",")]
-        elif line.startswith("REASONING:"):
-            reasoning = line.replace("REASONING:", "").strip()
-    return {**state, "selected_tools": tools_selected, "reasoning": reasoning}
+    FORCE memilih Documents (dokumen lokal) terlebih dahulu.
+    Hanya pilih tools eksternal jika dokumen lokal tidak mengandung informasi relevan.
+    """
+    question = state["question"]
+    # Cari apakah dokumen lokal memiliki setidaknya 1 hasil relevan
+    units = search_units_by_question(question, top_k=3)
+    if units:
+        # Prioritaskan dokumen lokal
+        selected = ["Documents"]
+        reasoning = "Dokumen lokal (uu_pdp.txt) mengandung potensi jawaban sehingga diprioritaskan."
+    else:
+        # Tidak ada di dokumen lokal -> coba eksternal sebagai fallback
+        selected = ["Documents", "TavilySearch", "Wikipedia", "arXiv"]
+        reasoning = "Tidak ditemukan potensi relevansi di dokumen lokal; memperluas pencarian ke sumber eksternal."
+    return {**state, "selected_tools": selected, "reasoning": reasoning}
 
 # ================================
-# 🔍 Node: Multi Source Retrieval (diperbaiki agar ambil dari dokumen)
+# 🔍 Node: Multi Source Retrieval (PRIORITIZE DOCUMENTS)
 # ================================
 @traceable
 def multi_source_retrieve_node(state: AgentState) -> AgentState:
-    q = state["question"]
+    question = state["question"]
     selected = state.get("selected_tools", [])
 
-    # Ambil isi pasal relevan dari dokumen lokal
-    internal_docs = cari_pasal_relevan(q)
+    # Ambil hasil dari dokumen lokal (HARUS)
+    local_units = search_units_by_question(question, top_k=5)
+    internal_docs = []
+    if local_units:
+        # Format tiap unit agar mudah dibaca oleh LLM
+        for u in local_units:
+            # sertakan heading seperti "Pasal X" agar LLM bisa menyebut sumber persis
+            internal_docs.append(f"{u['heading']}\n{u['content']}")
+    else:
+        internal_docs = ["(Tidak ditemukan pasal relevan dalam dokumen lokal UU PDP)"]
 
-    # Jalankan tools eksternal jika diperlukan
+    # External retrieval only if selected contains external tools AND no local hits
     external_docs = []
-    for tool_name in selected:
-        if tool_name in tools:
-            try:
-                hasil = tools[tool_name].run(q)
-                external_docs.append(hasil)
-            except Exception as e:
-                external_docs.append(f"{tool_name} gagal: {str(e)}")
-
+    if (not local_units) and any(t in ["TavilySearch", "Wikipedia", "arXiv"] for t in selected):
+        for tool_name in selected:
+            if tool_name in tools and tool_name != "Documents":
+                try:
+                    external_docs.append(f"{tool_name}:\n{tools[tool_name].run(question)}")
+                except Exception as e:
+                    external_docs.append(f"{tool_name}: Error - {str(e)}")
+    # Return docs
     return {**state, "docs": internal_docs, "external_docs": external_docs}
 
 # ================================
-# 🧮 Node: Grade Relevance
+# 🧮 Node: Grade Relevance (mengandalkan dokumen lokal)
 # ================================
 @traceable
 def enhanced_grade_node(state: AgentState) -> AgentState:
-    q = state["question"]
-    all_docs = state.get("docs", []) + state.get("external_docs", [])
-    prompt = f"""
-    Evaluasi relevansi isi dokumen berikut terhadap pertanyaan ini:
-
-    Pertanyaan: {q}
-    Dokumen: {all_docs}
-
-    Apakah dokumen-dokumen ini cukup relevan untuk menjawab pertanyaan pengguna? (ya/tidak)
-    """
-    res = llm.invoke(prompt)
-    return {**state, "relevant": "ya" in res.content.lower()}
+    question = state["question"]
+    docs = state.get("docs", []) or []
+    # Jika hanya berisi "(tidak ditemukan...)" maka mark not relevant
+    concatenated = "\n".join(docs)
+    is_relevant = "(tidak ditemukan pasal relevan" not in concatenated.lower()
+    # Jika ada external_docs, anggap relevan juga (tapi hanya dipakai saat local tidak punya)
+    if not is_relevant and state.get("external_docs"):
+        is_relevant = True
+    return {**state, "relevant": is_relevant}
 
 # ================================
-# 🧩 Node: Generate Final Answer
+# 🧩 Node: Generate Final Answer (MUST use only local docs if available)
 # ================================
 @traceable
 def enhanced_generation_node(state: AgentState) -> AgentState:
-    q = state["question"]
-    context = "\n".join(state.get("docs", []) + state.get("external_docs", []))
+    question = state["question"]
+    docs = state.get("docs", []) or []
+    external = state.get("external_docs", []) or []
 
+    # Build prompt that instructs model to only use local docs if they contain relevant info.
+    # The model is REQUIRED to quote exact passages found in `docs` and to include heading (Pasal X).
     prompt = f"""
-    Kamu adalah asisten hukum ahli dalam UU Perlindungan Data Pribadi (PDP).
-    Gunakan isi pasal yang ditemukan dari dokumen UU PDP di bawah ini untuk menjawab pertanyaan secara presisi.
+Kamu adalah asisten hukum spesialis UU Perlindungan Data Pribadi (PDP) di Indonesia.
+Penting: **UTAMAKAN dan HANYA gunakan isi yang berasal dari dokumen lokal 'uu_pdp.txt'** jika ada bagian dokumen yang relevan.
+Jika dokumen lokal berisi potongan yang relevan, jawab dengan:
+1) Kutip potongan dokumen persis (jangan parafrase untuk bagian kutipan), 
+2) Sebutkan sumbernya (contoh: "Sumber: Pasal 5 UU PDP"), 
+3) Berikan penjelasan singkat yang menghubungkan kutipan dengan pertanyaan (maksimal 2-3 kalimat).
+Jika dokumen lokal **TIDAK** mengandung jawaban, baru gunakan informasi eksternal sebagai fallback dan nyatakan "Fallback: tidak ditemukan di UU PDP, informasi dari {sumber}".
 
-    Pertanyaan: {q}
-    Isi Dokumen Relevan:
-    {context}
+Pertanyaan pengguna:
+{question}
 
-    Jawablah dalam Bahasa Indonesia formal dengan menyebutkan pasal atau ayat yang sesuai dari UU PDP.
-    Jika tidak ada pasal relevan, berikan penjelasan umum dan tandai dengan "(tidak ditemukan dalam UU PDP)".
+Bagian dokumen lokal yang relevan (jika ada):
+{chr(10).join(docs)}
+
+Bagian sumber eksternal (jika digunakan sebagai fallback):
+{chr(10).join(external)}
+
+Jawab sekarang sesuai aturan di atas. Jika ada pasal/ayat sebutkan secara eksplisit (misal: "Pasal 4 ayat (1)").
+Jika tidak ada referensi yang ditemukan di lokasimu, jawab jujur: "(tidak ditemukan dalam UU PDP)" dan berikan rekomendasi sumber eksternal singkat.
     """
-    res = llm.invoke(prompt)
-    return {**state, "answer": res.content.strip()}
+    resp = llm.invoke(prompt)
+    answer_text = resp.content.strip()
+    return {**state, "answer": answer_text}
 
 # ================================
 # 🔁 Node: Answer Check
 # ================================
 @traceable
 def answer_check_node(state: AgentState) -> AgentState:
-    q = state["question"]
-    ans = state.get("answer", "")
-    prompt = f"Apakah jawaban ini sudah sangat menjawab pertanyaan?\nPertanyaan: {q}\nJawaban: {ans}\nBalas hanya 'ya' atau 'tidak'."
-    res = llm.invoke(prompt)
-    return {**state, "answered": "ya" in res.content.lower()}
+    # Simpel: jika answer mengandung "(tidak ditemukan" => not answered else yes
+    ans = state.get("answer", "") or ""
+    answered = "(tidak ditemukan" not in ans.lower()
+    return {**state, "answered": answered}
 
 # ================================
 # 🔧 Workflow Graph (LangGraph)
@@ -213,10 +278,18 @@ workflow.add_edge("ToolSelection", "Retrieve")
 workflow.add_edge("Retrieve", "Grade")
 workflow.add_edge("Grade", "Generate")
 workflow.add_edge("Generate", "Evaluate")
+
 workflow.add_conditional_edges(
     "Evaluate",
-    lambda s: "Yes" if s["answered"] else "No",
+    lambda s: "Yes" if s.get("answered") else "No",
     {"Yes": END, "No": "Retrieve"}
 )
 
 runnable_graph = workflow.compile()
+
+# Optional helper main for quick testing (tidak mengubah logika lain)
+if __name__ == "__main__":
+    test_q = "Siapa yang bertanggung jawab atas pengolahan data menurut UU PDP?"
+    state = {"question": test_q}
+    res = runnable_graph.invoke(state)
+    print("ANSWER:\n", res.get("answer"))
