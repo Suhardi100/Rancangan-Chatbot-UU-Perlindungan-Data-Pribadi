@@ -23,9 +23,9 @@ os.environ["LANGCHAIN_PROJECT"] = "UU-PDP-AgenticRAG"
 # 🔮 Setup Google Gemini
 # ================================
 llm = ChatGoogleGenerativeAI(
-    model="gemini-2.0-flash-lite",
+    model="DeepSeek-V2.5",
     temperature=0.3,
-    google_api_key="AIzaSyD7o4ouxDE0xb1Iz3ez9oOPb7Qcwyfqg3I"
+    google_api_key="sk-ea2b2d07008645bea76788235d74a8d3"
 )
 
 # ================================
