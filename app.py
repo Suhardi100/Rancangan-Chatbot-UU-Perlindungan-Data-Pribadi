@@ -223,15 +223,3 @@ def run_chatbot(question):
         return result["answer"]
     except Exception as e:
         return f"⚠️ Terjadi kesalahan saat menjalankan: {str(e)}"
-
-# ================================
-# 💬 Streamlit UI
-# ================================
-st.title("🤖 Chatbot UU Perlindungan Data Pribadi")
-st.caption("Menggunakan Gemini + LangGraph + Dokumen UU PDP")
-
-question = st.text_input("Masukkan pertanyaan Anda:")
-if st.button("Kirim"):
-    with st.spinner("Sedang mencari jawaban..."):
-        answer = run_chatbot(question)
-        st.write(answer)
