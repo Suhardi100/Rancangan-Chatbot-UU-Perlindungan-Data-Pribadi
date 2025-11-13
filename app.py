@@ -124,7 +124,19 @@ def multi_source_retrieve_node(state: AgentState) -> AgentState:
     for tool_name in selected:
         if tool_name in tools:
             try:
-                external_docs.append(tools[tool_name].run(q))
+                result = tools[tool_name].run(q)
+                # Handle case where TavilySearch returns a list
+                if isinstance(result, list):
+                    # Convert list of search results to string
+                    result_str = ""
+                    for i, item in enumerate(result):
+                        if isinstance(item, dict):
+                            result_str += f"Result {i+1}: {item.get('title', 'No title')} - {item.get('content', 'No content')}\n"
+                        else:
+                            result_str += f"Result {i+1}: {str(item)}\n"
+                    external_docs.append(result_str.strip())
+                else:
+                    external_docs.append(str(result))
             except Exception as e:
                 external_docs.append(f"{tool_name} gagal: {str(e)}")
 
