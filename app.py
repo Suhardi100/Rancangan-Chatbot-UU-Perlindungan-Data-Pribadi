@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import TypedDict, List, Optional
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.document_loaders import TextLoader
@@ -9,12 +10,11 @@ from langchain_community.utilities import WikipediaAPIWrapper, ArxivAPIWrapper
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langgraph.graph import StateGraph, END
 from langsmith import traceable
-from langchain_core.utils.graph import set_recursion_limit
 
 # ======================================
 # 🧩 Setup Konfigurasi Dasar
 # ======================================
-set_recursion_limit(100)
+sys.setrecursionlimit(100)
 os.environ["TAVILY_API_KEY"] = "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"
 os.environ["LANGCHAIN_API_KEY"] = "ls__YourLangSmithKeyHere"
 os.environ["LANGCHAIN_PROJECT"] = "UU-PDP-AgenticRAG"
