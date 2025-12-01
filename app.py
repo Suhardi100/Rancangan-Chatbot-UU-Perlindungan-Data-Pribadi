@@ -79,7 +79,7 @@ class AgentState(TypedDict):
 def tool_selection_node(state: AgentState) -> AgentState:
     q = state["question"]
     prompt = f"""
-    Kamu adalah asisten ahli UU Pelindungan Data Pribadi yang sangat cerdas setara 100 profesor. Utamakan mencari dulu sumber yang terdapat dalam documents. Baru setelah itu, tentukan tools terbaik untuk menjawab pertanyaan berikut:
+    Kamu adalah asisten ahli UU Pelindungan Data Pribadi yang sangat cerdas setara 100 profesor. Sebelum menjawab wajib mengecek apakah pertanyaan tersebut berkaitan dengan UU Perlindungan Data Pribadi (PDP) atau tidak? Jika tidak, maka jangan mencoba menjawab. Namun jawablah dengan kata-kata yang sama persis dengan "saya tidak bisa menjawab pertanyaan Anda karena tidak berkaitan dengan UU Perlindungan Data Pribadi (PDP)". Utamakan mencari dulu sumber yang terdapat dalam documents. Baru setelah itu, tentukan tools terbaik untuk menjawab pertanyaan berikut:
 
     Pertanyaan: {q}
 
@@ -169,6 +169,8 @@ def enhanced_generation_node(state: AgentState) -> AgentState:
     context = "\n".join(state.get("docs", []) + state.get("external_docs", []))
     prompt = f"""
     Kamu adalah asisten ahli UU Perlindungan Data Pribadi (PDP) di Indonesia.
+    Sebelum menjawab wajib mengecek apakah pertanyaan tersebut berkaitan dengan UU Perlindungan Data Pribadi (PDP) atau tidak? Jika tidak, maka jangan mencoba menjawab. 
+    Namun jawablah dengan kata-kata yang sama persis dengan "saya tidak bisa menjawab pertanyaan Anda karena tidak berkaitan dengan UU Perlindungan Data Pribadi (PDP)".
     Utamakan mengambil dari documents lalu gabungkan informasi dari berbagai sumber berikut untuk menjawab pertanyaan secara komprehensif.
 
     Pertanyaan: {q}
