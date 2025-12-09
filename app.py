@@ -23,7 +23,7 @@ os.environ["LANGCHAIN_PROJECT"] = "UU-CiptaKerja-AgenticRAG"
 # 🔮 Setup Google Gemini
 # ================================
 llm = ChatGoogleGenerativeAI(
-    model="gemma-3-12b",
+    model="gemini-2.5-flash-live",
     temperature=0.3,
     google_api_key="AIzaSyD7a6uJ-UU5oWblVuHotgbL37JMPb1BEOU"
 )
