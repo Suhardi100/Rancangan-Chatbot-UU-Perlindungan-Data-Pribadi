@@ -10,8 +10,6 @@ from langchain_community.utilities import WikipediaAPIWrapper, ArxivAPIWrapper
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langgraph.graph import StateGraph, END
 from langsmith import traceable
-from transformers import pipeline
-from langchain.llms import HuggingFacePipeline
 
 # ================================
 # 🔧 Konfigurasi Awal
@@ -24,14 +22,12 @@ os.environ["LANGCHAIN_PROJECT"] = "UU-CiptaKerja-AgenticRAG"
 # ================================
 # 🔮 Setup Google Gemini
 # ================================
-pipe = pipeline(
-    "text-generation",
-    model="mistralai/Mistral-7B-Instruct-v0.1",   # model gratis
-    max_new_tokens=2000,
-    temperature=0.2
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash-live",
+    model="gemini-2.5-flash",
+    temperature=0.3,
+    google_api_key="AIzaSyD7a6uJ-UU5oWblVuHotgbL37JMPb1BEOU"
 )
-
-llm = HuggingFacePipeline(pipeline=pipe)
 
 # ================================
 # 🧰 Tools Bahasa Indonesia
@@ -105,7 +101,7 @@ def tool_selection_node(state: AgentState) -> AgentState:
     REASONING: alasan
     """
     result = llm.invoke(prompt)
-    lines = result.strip().split("\n")
+    lines = result.content.strip().split("\n")
     tools_selected, reasoning = [], ""
     for line in lines:
         if line.startswith("TOOLS:"):
@@ -163,7 +159,7 @@ def enhanced_grade_node(state: AgentState) -> AgentState:
     Apakah sangat relevan untuk menjawab pertanyaan dan sesuai dengan documents? (ya/tidak)
     """
     res = llm.invoke(prompt)
-    return {**state, "relevant": "ya" in res.lower()}
+    return {**state, "relevant": "ya" in res.content.lower()}
 
 # ================================
 # 🧩 Node: Generate Final Answer
@@ -184,7 +180,7 @@ def enhanced_generation_node(state: AgentState) -> AgentState:
     Jawablah dengan mengutamakan yang ada di dokumen tersebut dengan bahasa Indonesia formal, dan sebutkan sumber (UU, Wikipedia, Tavily, dll).
     """
     res = llm.invoke(prompt)
-    return {**state, "answer": res.strip()}
+    return {**state, "answer": res.content.strip()}
 
 # ================================
 # 🔁 Node: Answer Check
@@ -195,7 +191,7 @@ def answer_check_node(state: AgentState) -> AgentState:
     ans = state.get("answer", "")
     prompt = f"Apakah jawaban ini sudah sangat menjawab pertanyaan?\nPertanyaan: {q}\nJawaban: {ans}\nBalas hanya 'ya' atau 'tidak'."
     res = llm.invoke(prompt)
-    return {**state, "answered": "ya" in res.lower()}
+    return {**state, "answered": "ya" in res.content.lower()}
 
 # ================================
 # 🔧 Workflow Graph (LangGraph)
