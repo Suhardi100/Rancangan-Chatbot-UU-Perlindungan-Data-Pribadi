@@ -10,6 +10,8 @@ from langchain_community.utilities import WikipediaAPIWrapper, ArxivAPIWrapper
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langgraph.graph import StateGraph, END
 from langsmith import traceable
+from transformers import pipeline
+from langchain.llms import HuggingFacePipeline
 
 # ================================
 # 🔧 Konfigurasi Awal
@@ -22,11 +24,14 @@ os.environ["LANGCHAIN_PROJECT"] = "UU-CiptaKerja-AgenticRAG"
 # ================================
 # 🔮 Setup Google Gemini
 # ================================
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
-    temperature=0.3,
-    google_api_key="AIzaSyD7a6uJ-UU5oWblVuHotgbL37JMPb1BEOU"
+pipe = pipeline(
+    "text-generation",
+    model="distilgpt2",   # model gratis
+    max_new_tokens=200,
+    temperature=0.3
 )
+
+llm = HuggingFacePipeline(pipeline=pipe)
 
 # ================================
 # 🧰 Tools Bahasa Indonesia
