@@ -26,9 +26,9 @@ os.environ["LANGCHAIN_PROJECT"] = "UU-CiptaKerja-AgenticRAG"
 # ================================
 pipe = pipeline(
     "text-generation",
-    model="distilgpt2",   # model gratis
-    max_new_tokens=200,
-    temperature=0.3
+    model="mistralai/Mistral-7B-Instruct-v0.1",   # model gratis
+    max_new_tokens=2000,
+    temperature=0.2
 )
 
 llm = HuggingFacePipeline(pipeline=pipe)
@@ -105,7 +105,7 @@ def tool_selection_node(state: AgentState) -> AgentState:
     REASONING: alasan
     """
     result = llm.invoke(prompt)
-    lines = result.content.strip().split("\n")
+    lines = result.strip().split("\n")
     tools_selected, reasoning = [], ""
     for line in lines:
         if line.startswith("TOOLS:"):
@@ -163,7 +163,7 @@ def enhanced_grade_node(state: AgentState) -> AgentState:
     Apakah sangat relevan untuk menjawab pertanyaan dan sesuai dengan documents? (ya/tidak)
     """
     res = llm.invoke(prompt)
-    return {**state, "relevant": "ya" in res.content.lower()}
+    return {**state, "relevant": "ya" in res.lower()}
 
 # ================================
 # 🧩 Node: Generate Final Answer
@@ -184,7 +184,7 @@ def enhanced_generation_node(state: AgentState) -> AgentState:
     Jawablah dengan mengutamakan yang ada di dokumen tersebut dengan bahasa Indonesia formal, dan sebutkan sumber (UU, Wikipedia, Tavily, dll).
     """
     res = llm.invoke(prompt)
-    return {**state, "answer": res.content.strip()}
+    return {**state, "answer": res.strip()}
 
 # ================================
 # 🔁 Node: Answer Check
@@ -195,7 +195,7 @@ def answer_check_node(state: AgentState) -> AgentState:
     ans = state.get("answer", "")
     prompt = f"Apakah jawaban ini sudah sangat menjawab pertanyaan?\nPertanyaan: {q}\nJawaban: {ans}\nBalas hanya 'ya' atau 'tidak'."
     res = llm.invoke(prompt)
-    return {**state, "answered": "ya" in res.content.lower()}
+    return {**state, "answered": "ya" in res.lower()}
 
 # ================================
 # 🔧 Workflow Graph (LangGraph)
