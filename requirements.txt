@@ -1,15 +1,21 @@
+# ================================
 # Core LLM and LangChain
+# ================================
 langchain==0.3.13
 langchain-core==0.3.28
 langchain-community==0.3.13
+langchain-openai
 langchain-google-genai==2.0.5
 langchain-huggingface
 langgraph
 pydantic==2.10.3
 tiktoken
 faiss-cpu
+openai
 
+# ================================
 # Document Handling
+# ================================
 pypdf
 unstructured
 openpyxl
@@ -17,13 +23,19 @@ docx2txt
 python-magic
 python-pptx
 
+# ================================
 # Tools for retrieval
+# ================================
 wikipedia
 arxiv
 tavily-python
 
+# ================================
 # Streamlit for frontend
+# ================================
 streamlit
 
+# ================================
 # Monitoring
+# ================================
 langsmith
