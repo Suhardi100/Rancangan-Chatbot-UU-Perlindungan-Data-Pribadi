@@ -10,6 +10,7 @@ from langchain_community.utilities import WikipediaAPIWrapper, ArxivAPIWrapper
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langgraph.graph import StateGraph, END
 from langsmith import traceable
+from langchain_openai import ChatOpenAI
 
 # ================================
 # 🔧 Konfigurasi Awal
@@ -22,10 +23,11 @@ os.environ["LANGCHAIN_PROJECT"] = "UU-CiptaKerja-AgenticRAG"
 # ================================
 # 🔮 Setup Google Gemini
 # ================================
-llm = ChatGoogleGenerativeAI(
-    model="Gemini 2.5 Flash",
+llm = ChatOpenAI(
+    model="stepfun/step-3.5-flash:free",
     temperature=0.3,
-    google_api_key="AIzaSyDKgJmWDSqzRAmHwZoAW_Ixa31KbzUjzTg"
+    openai_api_key=os.getenv("API_OR"),
+    openai_api_base="https://openrouter.ai/api/v1"
 )
 
 # ================================
