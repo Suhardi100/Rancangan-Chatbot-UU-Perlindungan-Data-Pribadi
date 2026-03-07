@@ -5,7 +5,7 @@ from langchain_core.tools import Tool
 from langchain_community.tools.wikipedia.tool import WikipediaQueryRun
 from langchain_community.tools.arxiv.tool import ArxivQueryRun
 from langchain_community.utilities import WikipediaAPIWrapper, ArxivAPIWrapper
-from langchain_community.tools.tavily_search import TavilySearchResults
+from langchain_tavily import TavilySearch
 from langgraph.graph import StateGraph, END
 from langsmith import traceable
 from langchain_openai import ChatOpenAI
@@ -33,7 +33,7 @@ llm = ChatOpenAI(
 # ================================
 wikipedia_tool = WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper(lang="id"))
 arxiv_tool = ArxivQueryRun(api_wrapper=ArxivAPIWrapper())
-tavily_tool_instance = TavilySearchResults(k=3)
+tavily_tool_instance = TavilySearch(max_results=3)
 
 tools = {
     "Wikipedia": Tool(
