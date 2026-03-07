@@ -6,9 +6,9 @@ langchain-core
 langchain-community
 langchain-openai
 langchain-huggingface
-langchain-text-splitters
 langgraph
-pydantic
+langchain-text-splitters==0.2.4
+pydantic==2.7.4
 tiktoken
 faiss-cpu
 openai
