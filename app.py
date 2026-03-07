@@ -2,7 +2,6 @@ import os
 import streamlit as st
 from typing import TypedDict, List, Optional
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain.tools import Tool
 from langchain_community.tools.wikipedia.tool import WikipediaQueryRun
 from langchain_community.tools.arxiv.tool import ArxivQueryRun
@@ -58,8 +57,8 @@ tools = {
 # ================================
 # 📚 Load Dokumen UU PDP
 # ================================
-loader = TextLoader("uu_pdp.txt", encoding='utf-8')
-documents = loader.load()
+with open("uu_pdp.txt", "r", encoding="utf-8") as f:
+    documents = [f.read()]
 
 # ================================
 # 🧩 Define Agent State
@@ -120,7 +119,7 @@ def multi_source_retrieve_node(state: AgentState) -> AgentState:
     selected = state.get("selected_tools", [])
     
     # Gunakan konten aktual dari dokumen uu_pdp.txt
-    internal_docs = [doc.page_content for doc in documents]
+    internal_docs = documents
     external_docs = []
 
     for tool_name in selected:
