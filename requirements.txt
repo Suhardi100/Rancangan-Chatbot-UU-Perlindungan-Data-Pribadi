@@ -5,8 +5,8 @@ langchain
 langchain-core
 langchain-community
 langchain-openai
-langchain-google-genai
 langchain-huggingface
+langchain-text-splitters
 langgraph
 pydantic
 tiktoken
