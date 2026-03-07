@@ -32,6 +32,7 @@ python-pptx>=0.6.23
 wikipedia>=1.4.0
 arxiv>=2.1.0
 tavily-python>=0.5.0
+langchain-tavily>=0.1.0
 
 # ================================
 # Streamlit for frontend
