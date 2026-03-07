@@ -1,41 +1,44 @@
 # ================================
 # Core LLM and LangChain
 # ================================
-langchain
-langchain-core
-langchain-community
-langchain-openai
-langchain-huggingface
-langgraph
-langchain-text-splitters==0.2.4
-pydantic==2.7.4
-tiktoken
-faiss-cpu
-openai
+langchain>=0.2.14
+langchain-core>=0.2.36
+langchain-community>=0.2.14
+langchain-openai>=0.1.22
+langchain-huggingface>=0.0.3
+langgraph>=0.1.19
+langchain-text-splitters>=0.2.4
+
+pydantic>=2.8
+pydantic-core>=2.20
+
+tiktoken>=0.7.0
+faiss-cpu>=1.8.0
+openai>=1.35.0
 
 # ================================
 # Document Handling
 # ================================
-pypdf
-unstructured
-openpyxl
-docx2txt
-python-magic
-python-pptx
+pypdf>=4.2.0
+unstructured>=0.14.0
+openpyxl>=3.1.2
+docx2txt>=0.8
+python-magic>=0.4.27
+python-pptx>=0.6.23
 
 # ================================
 # Tools for retrieval
 # ================================
-wikipedia
-arxiv
-tavily-python
+wikipedia>=1.4.0
+arxiv>=2.1.0
+tavily-python>=0.5.0
 
 # ================================
 # Streamlit for frontend
 # ================================
-streamlit
+streamlit>=1.36
 
 # ================================
 # Monitoring
 # ================================
-langsmith
+langsmith>=0.1.95
