@@ -24,7 +24,7 @@ os.environ["LANGCHAIN_PROJECT"] = "UU-CiptaKerja-AgenticRAG"
 llm = ChatOpenAI(
     model="stepfun/step-3.5-flash:free",
     temperature=0.3,
-    openai_api_key=os.getenv("API_OR"),
+    openai_api_key=st.secrets["API_OR"],
     openai_api_base="https://openrouter.ai/api/v1"
 )
 
