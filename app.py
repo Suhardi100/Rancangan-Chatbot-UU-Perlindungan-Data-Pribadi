@@ -22,7 +22,7 @@ os.environ["LANGCHAIN_PROJECT"] = "UU-CiptaKerja-AgenticRAG"
 # 🔮 Setup Google Gemini
 # ================================
 llm = ChatOpenAI(
-    model="google/gemma-4-31b-it:free",
+    model="inclusionai/ling-2.6-1t:free",
     temperature=0.3,
     openai_api_key=st.secrets["API_OR"],
     openai_api_base="https://openrouter.ai/api/v1"
